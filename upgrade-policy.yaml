@@ -1,0 +1,88 @@
+# upgrade-policy.yaml
+# Source of truth for all upgrade decisions.
+# Agents read this file. Edit this file to change policy.
+# Never encode policy in prompts.
+
+# ── UPGRADE SCOPE ──────────────────────────────────────────
+upgrade:
+    maxType: minor # patch | minor — never attempt major bumps
+    concurrency: 3 # max upgrade agents running simultaneously
+    requireApproval: false # pause at Checkpoint 1 and Checkpoint 2
+
+# ── SECURITY ───────────────────────────────────────────────
+security:
+    validateVersions:
+        true # every version string must be confirmed on
+        # the registry before being added to a plan
+    rejectUnknownVersions:
+        true # if a version cannot be confirmed, exclude
+        # the package — never install unvalidated strings
+
+# ── LOCKFILE ───────────────────────────────────────────────
+lockfile:
+    required:
+        true # lockfile must be resolved and committed
+        # alongside every package.json change
+    commitTogether: true # package.json and lockfile go in the same commit
+
+# ── USER EXCLUSIONS ────────────────────────────────────────
+exclude:
+    - dayjs # never touch these packages across all repos
+
+# ── COUPLED PACKAGE GROUPS ─────────────────────────────────
+# Packages in the same group must be upgraded together or not at all.
+# This list is the authoritative classifier — agents do not guess coupling.
+coupled:
+    - [react, react-dom, "@types/react"]
+    - [jest, "@jest/globals", ts-jest, babel-jest]
+    - [eslint, "@typescript-eslint/eslint-plugin", "@typescript-eslint/parser"]
+    - [webpack, webpack-cli, webpack-dev-server]
+    - [vite, "@vitejs/plugin-react"]
+
+# ── ALWAYS EXCLUDE (major-risk packages) ───────────────────
+# These packages are never upgraded regardless of version bump type.
+# Classification is deterministic — agents do not override this list.
+alwaysExclude:
+    - react
+    - vue
+    - angular
+    - svelte
+    - typescript
+    - vite
+    - webpack
+    - esbuild
+    - jest
+    - vitest
+    - mocha
+
+# ── RETRY POLICY ───────────────────────────────────────────
+# The policy engine — not the upgrade agent — makes retry vs skip decisions.
+# Upgrade agent reports failure type. Policy engine applies these rules.
+retry:
+    maxFallbacks: 3 # max number of lower versions to try
+
+    # on these failure types — try fallback versions
+    retryOn:
+        - breaking-api
+        - behavior-change
+        - ts-incompatibility
+        - lint-rule-change
+        - tree-conflict
+        - stale-cache
+
+    # on these failure types — skip immediately, no fallback will help
+    skipOn:
+        - peer-conflict
+        - platform-env
+        - registry-auth
+        - registry-network # after backoff retries exhausted
+
+# ── VALIDATION ORDER ───────────────────────────────────────
+validation:
+    order:
+        - typecheck
+        - lint
+        - test
+        - build
+    # steps are skipped if the script does not exist in package.json
+    # validation must pass all available steps before committing
