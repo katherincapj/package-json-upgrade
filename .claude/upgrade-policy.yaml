@@ -3,6 +3,12 @@
 # Agents read this file. Edit this file to change policy.
 # Never encode policy in prompts.
 
+# ── GIT BRANCH ─────────────────────────────────────────────
+git:
+  defaultBranch: feat/dependency-upgrades  # branch all upgrades are committed to
+  createIfMissing: true        # if branch does not exist, create it automatically
+  baseBranch: main             # branch to create from if defaultBranch is missing
+  
 # ── UPGRADE SCOPE ──────────────────────────────────────────
 upgrade:
     maxType: minor # patch | minor — never attempt major bumps

@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm outdated *)",
+      "Bash(pnpm --version)",
+      "Bash(npm --version)",
+      "Bash(pnpm outdated *)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(node -e ' *)",
+      "Bash(npm view *)",
+      "Bash(timeout 20 npm view \"@typescript-eslint/parser\" versions --json)",
+      "Bash(npm config *)",
+      "Bash(node -e \"const l=require\\('./package-lock.json'\\); console.log\\(l.lockfileVersion\\); console.log\\(JSON.stringify\\(l.packages['node_modules/eslint'],null,2\\)\\); console.log\\(JSON.stringify\\(l.packages['']['devDependencies'],null,2\\)\\);\")",
+      "Bash(git status *)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"const p=require\\('./package-lock.json'\\); const names=['@expo/vector-icons','@react-navigation/bottom-tabs','@react-navigation/elements','@react-navigation/native','react-native','react-native-reanimated','react-native-safe-area-context','react-native-screens','react-native-worklets']; names.forEach\\(n=>{const e=p.packages['node_modules/'+n]; console.log\\(n, e&&e.version\\);}\\);\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(node -e \"const p=require\\('./package-lock.json'\\); console.log\\(p.packages['node_modules/@react-navigation/elements'].version\\);\")",
+      "Bash(node -e \"const p=require\\('./package-lock.json'\\); console.log\\(p.packages['node_modules/@react-navigation/native'].version\\);\")",
+      "Bash(node -e \"const p=require\\('./package-lock.json'\\); console.log\\('react-native', p.packages['node_modules/react-native'].version\\);\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.dependencies, null, 2\\)\\);\")"
+    ]
+  }
+}
