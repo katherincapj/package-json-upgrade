@@ -40,9 +40,26 @@ Avoid:
 { "plan": { }, "policy": { } }
 ```
 
-`plan` is the output of the planning agent. `policy` is used only to determine
-validation order — retry vs skip decisions are made by the caller after this agent
-returns its result.
+`plan` is the output of the planning agent. `policy` is the **resolved** policy from the
+orchestrator, used only to determine validation order — retry vs skip decisions are made
+by the caller after this agent returns its result.
+
+### Input guard — run this before anything else
+
+This agent is separately registered and can be invoked directly, bypassing the
+orchestrator's resolution step. Before touching the repo, confirm both inputs are
+present and that `policy.validation.order` is a non-empty list.
+
+If `plan` is missing, or `policy.validation.order` is absent or empty, **stop and return
+an error**:
+
+```json
+{ "status": "failed", "reason": "policy object missing required key: validation.order" }
+```
+
+Do not fall back to a default validation order and do not proceed with validation
+skipped. An empty order would mean committing installs that were never verified, which
+is the exact outcome this agent exists to prevent. Defaults belong to the orchestrator.
 
 ---
 
@@ -137,6 +154,7 @@ classification decisions — those belong to the orchestrator/planning-agent.
 
 - Facts only — report what happened, not what should happen next
 - Never skip validation — every install must be validated before committing
+- Never apply a default for a missing policy key — refuse and name the key instead
 - Always commit package.json and lockfile together in the same commit
 - Always revert to clean state before any fallback attempt
 - Never leave a repo in a dirty state

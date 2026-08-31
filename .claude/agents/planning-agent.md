@@ -48,8 +48,28 @@ Receives from the orchestrator (or directly from the user if run standalone):
 }
 ```
 
-The `policy` object is the full contents of `upgrade-policy.yaml`. This agent does not
-read the policy file directly.
+The `policy` object is the **resolved** policy — the orchestrator has already applied
+defaults and validated it. This agent does not read the policy file directly.
+
+### Input guard — run this before anything else
+
+This agent is separately registered and can be invoked directly, bypassing the
+orchestrator's resolution step. Before doing any work, confirm the `policy` object is
+present and contains every key this agent reads:
+
+`upgrade.maxType`, `exclude`, `alwaysExclude`, `coupled`, `security.validateVersions`,
+`security.rejectUnknownVersions`, `retry.maxFallbacks`
+
+If the object is missing, or any of these keys is absent, **stop and return an error**
+naming exactly what was missing:
+
+```json
+{ "status": "failed", "reason": "policy object missing required keys: upgrade.maxType, coupled" }
+```
+
+Do not apply defaults of your own and do not substitute your own judgment for a missing
+value. Defaults belong to the orchestrator alone — supplying a second set here would
+create a second source of truth and make the run unauditable against the policy file.
 
 ---
 
@@ -102,7 +122,9 @@ If `policy.security.validateVersions` is true (it should always be true), confir
 version string against the registry before including it:
 
 - Confirm `to` version exists on the registry
-- Fetch the 3 versions immediately below `to` as fallbacks, confirm each exists
+- Fetch the `policy.retry.maxFallbacks` versions immediately below `to` as fallbacks, and
+  confirm each exists. The count comes from policy — never hardcode it. If
+  `maxFallbacks` is `0`, produce an empty `fallbacks` array and skip this lookup.
 - If `policy.security.rejectUnknownVersions` is true and a version cannot be confirmed
   → remove from upgrades, add to excluded with reason "version unconfirmed on registry"
 
@@ -135,6 +157,10 @@ pinned packages.
 }
 ```
 
+The `fallbacks` arrays above show three entries only because `retry.maxFallbacks` is `3`
+in the example. Their length always equals `policy.retry.maxFallbacks` — it is not a
+fixed count.
+
 Always return a plan — even if upgrades and groups are both empty.
 
 ---
@@ -143,6 +169,7 @@ Always return a plan — even if upgrades and groups are both empty.
 
 - Read only — never modify any file
 - Never make classification decisions independently — follow policy object exactly
+- Never apply a default for a missing policy key — refuse and name the key instead
 - Never include an unvalidated version string in the plan
 - Always include lockfilePath in the plan
 - Complete in seconds — this agent must be fast

@@ -150,6 +150,55 @@ deliberately kept out of the prompts so that what the system does is auditable i
 **Adding a package to `alwaysExclude` is the correct response to a package that keeps breaking
 your build.** That is the intended way to teach the system.
 
+### If a setting is missing or wrong
+
+The orchestrator resolves the file once, in three stages — parse, default, validate — and reports
+what it did before spawning anything.
+
+**Missing or empty → a conservative default.** Absence means you didn't say, so the run takes the
+narrowest reading and continues:
+
+| Key | Default |
+|---|---|
+| `upgrade.maxType` | `patch` |
+| `upgrade.concurrency` | `1` (serial) |
+| `upgrade.requireApproval` | `true` (gate on) |
+| `security.validateVersions` / `rejectUnknownVersions` | `true` |
+| `lockfile.required` / `commitTogether` | `true` |
+| `validation.order` | all four steps |
+| `alwaysExclude` / `coupled` | the built-in lists |
+| `exclude`, `retry.retryOn`, `retry.skipOn` | empty |
+| `retry.maxFallbacks` | `3` |
+
+An absent key never widens what a run may do.
+
+**Present but invalid → the run stops.** A wrong value is intent that cannot be guessed:
+`maxType: banana`, `maxType: major` (forbidden outright, so requesting it is a contradiction),
+`concurrency: -1`, a non-boolean in a boolean field, an unknown step in `validation.order`, an
+unknown label in a retry list, the same label in both retry lists, or a `coupled` group with one
+package.
+
+**A typo'd key also stops the run.** `alwaysexclude`, `always_exclude` and `excludes` are near-
+matches of real keys, and silently ignoring one disables a safety list. Unrecognized keys that
+resemble nothing are warned about and ignored.
+
+**Missing or unparseable file → the run stops.** This is the loud case, unchanged.
+
+Everything defaulted or warned appears in a `POLICY RESOLUTION` block before any work begins, and
+again in the final report:
+
+```
+POLICY RESOLUTION
+══════════════════════════════════════════
+defaulted   upgrade.concurrency = 1
+defaulted   validation.order = typecheck, lint, test, build
+warning     unknown key 'notifications' — ignored
+══════════════════════════════════════════
+```
+
+Note that `planning-agent` and `upgrade-agent` do **not** apply defaults. Invoked directly, they
+refuse and name the missing key. Resolution happens in exactly one place.
+
 `.claude/settings.local.json` is committed to this repo and holds the Bash permission allowlist
 built up from previous runs. It has some very session-specific entries (one-off `node -e` lockfile
 probes) that can be generalized. Note that `settings.local.json` is conventionally a personal,
@@ -174,10 +223,16 @@ retry policy. Every failure gets exactly one label:
 | `platform-env` | Node version, OS, or native build problem | Skip |
 | `registry-auth` | Registry credentials rejected | Skip |
 | `registry-network` | Registry unreachable after backoff | Skip |
-| `pre-existing` | Already failing before any upgrade ran | Not blamed on any package |
+| `pre-existing` | Already failing before any upgrade ran | Own report section, never retried |
 
 A `pre-existing` result means your repo had a red test before the run started. Fix that first —
-it makes every subsequent result ambiguous.
+it makes every subsequent result ambiguous. It is deliberately absent from both `retryOn` and
+`skipOn`: the failure predates the run and belongs to no package, so the orchestrator handles it
+as its own outcome. Don't "fix" this by adding it to a retry list.
+
+Any other label that appears in neither list is reported as **unrouted** — policy has no rule for
+it, and the orchestrator will not improvise one. That's a gap in your `upgrade-policy.yaml` to
+close.
 
 ---
 

@@ -60,6 +60,24 @@ do not infer coupling), retry/skip failure types, `retry.maxFallbacks`, and
 Runtime overrides in the invoking prompt (`exclude:`, `pin:`) **merge with** policy — they never
 replace it.
 
+## How policy is resolved
+
+The orchestrator's Step 1 is the **only** place policy is resolved, and it runs parse → default →
+validate. A key that is absent or empty gets a conservative default (`maxType` → `patch`,
+`concurrency` → `1`, `requireApproval` → `true`, `validation.order` → all four steps, the retry
+lists → empty). A key that is *present but invalid* — `maxType: banana`, `maxType: major`,
+`concurrency: -1`, a label in both `retryOn` and `skipOn` — aborts the run instead. Missing means
+"you didn't say"; wrong means intent that can't be guessed. A key that near-matches a real one
+(`alwaysexclude`) also aborts, because that typo silently disables a safety list.
+
+Everything defaulted or warned is printed in a `POLICY RESOLUTION` block before any agent spawns,
+and repeated in the final report.
+
+**Subagents never apply defaults.** `planning-agent` and `upgrade-agent` both open with an input
+guard that refuses and names the missing key, because they can be invoked directly and bypass
+Step 1 entirely. Adding a fallback there would create a second source of truth — resolution stays
+in one place.
+
 ## Known drift to watch
 
 The agent prompts refer to the policy file as `package-json-upgrade/upgrade-policy.yaml`; it
