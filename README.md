@@ -9,21 +9,31 @@ configuration: one policy file and three agent definitions.
 
 ---
 
-## Before the first run — three things are broken
+## How it is meant to be run
+
+**Clone-and-point.** The session runs from inside this repo, and the repos being upgraded are
+passed in as absolute paths. This repo is the control plane: one policy file governs every run,
+one permission allowlist covers them all, and the target repos are never asked to hold any
+configuration of their own.
+
+That means each target repo must also be added as a working directory, or the agents cannot read
+its `package.json` at all:
+
+```
+claude --add-dir ../my-app --add-dir ../other-app
+```
+
+## Before the first run — two things are broken
 
 These are known gaps in the agent definitions. Fix them or the run will not work as described.
 
-**1. The policy file path is wrong.** All three agent files tell the agent to read
-`package-json-upgrade/upgrade-policy.yaml`. The file is actually at
-`.claude/upgrade-policy.yaml`. The orchestrator hard-stops on step 1 with
-*"upgrade-policy.yaml not found."*
-
-**2. Nothing changes directory into the target repo.** The upgrade agent runs `git status`,
+**1. Nothing changes directory into the target repo.** The upgrade agent runs `git status`,
 `npm install`, and `git commit` assuming it is already inside the repo being upgraded. The plan
-carries an absolute `repo` path, but no step tells the agent to use it. Commands will run against
-whatever directory the session started in.
+carries an absolute `repo` path, but no step tells the agent to use it. In the clone-and-point
+model the working directory is *never* the target — it is always this repo, which has no
+`package.json` — so this blocks every run.
 
-**3. The `git:` policy block is never read.** `upgrade-policy.yaml` declares
+**2. The `git:` policy block is never read.** `upgrade-policy.yaml` declares
 `defaultBranch: feat/dependency-upgrades`, `createIfMissing`, and `baseBranch: main`. No agent
 references any of it. Upgrades commit to **whatever branch is currently checked out** — which is
 usually `main`. Check out an upgrade branch by hand before running, until this is wired up.

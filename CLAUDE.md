@@ -78,11 +78,22 @@ guard that refuses and names the missing key, because they can be invoked direct
 Step 1 entirely. Adding a fallback there would create a second source of truth — resolution stays
 in one place.
 
+## Operating model
+
+**Clone-and-point.** The session runs from the root of this repo; target repos are passed in as
+absolute paths and added with `--add-dir`. This repo is the control plane — one policy file, one
+allowlist, no configuration required in the target repos. `.claude/upgrade-policy.yaml` therefore
+resolves against this repo, never against a repo being upgraded.
+
 ## Known drift to watch
 
-The agent prompts refer to the policy file as `package-json-upgrade/upgrade-policy.yaml`; it
-actually lives at `.claude/upgrade-policy.yaml`. If the orchestrator reports "upgrade-policy.yaml
-not found", this path mismatch is the likely cause.
+**The upgrade agent never enters the target repo.** It runs `git status`, `npm install`, and
+`git commit` assuming it is already there; the plan carries an absolute `repo` path that no step
+tells it to use. Under clone-and-point the working directory is always this repo, so this blocks
+every run. Same gap in the planner's outdated check.
+
+**The `git:` policy block is dead config** — `defaultBranch`, `createIfMissing`, `baseBranch` are
+referenced by no agent, so commits land on whatever branch is checked out.
 
 `.claude/settings.local.json` is an allowlist grown from real runs (npm/pnpm outdated, npm view,
 npm install, npm run, git add/commit, and several one-off `node -e` lockfile probes). Some entries

@@ -1,6 +1,6 @@
 ---
 name: package-json-upgrade-orchestrator
-description: Coordinates minor/patch dependency upgrades across one or more repos in this workspace, driven entirely by package-json-upgrade/upgrade-policy.yaml. Spawns planning-agent and upgrade-agent subagents, enforces concurrency limits, and runs user checkpoints. Use when the user asks to upgrade, bump, or update dependencies across repo(s) in this workspace.
+description: Coordinates minor/patch dependency upgrades across one or more repos, driven entirely by .claude/upgrade-policy.yaml. Spawns planning-agent and upgrade-agent subagents, enforces concurrency limits, and runs user checkpoints. Use when the user asks to upgrade, bump, or update dependencies across one or more repo paths.
 tools: Read, Agent, AskUserQuestion
 model: sonnet
 ---
@@ -10,7 +10,7 @@ model: sonnet
 ## Purpose
 
 Coordinate dependency upgrades across multiple repositories. Load policy from
-`package-json-upgrade/upgrade-policy.yaml`, spawn planning and upgrade subagents,
+`.claude/upgrade-policy.yaml`, spawn planning and upgrade subagents,
 manage concurrency, handle user checkpoints, and produce a final consolidated report.
 
 ## Role
@@ -22,7 +22,7 @@ manage concurrency, handle user checkpoints, and produce a final consolidated re
 ## Tool preferences
 
 Use:
-- reading `package-json-upgrade/upgrade-policy.yaml`
+- reading `.claude/upgrade-policy.yaml`
 - spawning `planning-agent` subagents (via the Agent tool)
 - spawning `upgrade-agent` subagents (via the Agent tool)
 - user interaction at Checkpoint 1 and Checkpoint 2 (via AskUserQuestion)
@@ -40,9 +40,17 @@ Avoid:
 
 ### Step 1: Load and Resolve Policy
 
-Before doing anything else, read `package-json-upgrade/upgrade-policy.yaml` (path is
-relative to the workspace root this session runs in). This file is the single source
-of truth for all decisions in this run.
+Before doing anything else, read `.claude/upgrade-policy.yaml`. This file is the single
+source of truth for all decisions in this run.
+
+The path is relative to the session's working directory, which is the root of the
+`package-json-upgrade` repository — the same repo this agent definition lives in. That is
+the intended operating model: the session runs from this repo, and the repos being
+upgraded are passed in as absolute paths (see Step 2). The policy file is never read from
+a target repo.
+
+If the working directory is a subdirectory of this repo rather than its root, resolve
+`.claude/upgrade-policy.yaml` from the repository root.
 
 Resolving it is a three-stage process — **parse → default → validate** — and it happens
 here, once. This is the only place in the system where policy defaults are applied.
