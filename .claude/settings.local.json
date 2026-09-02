@@ -23,7 +23,22 @@
       "Bash(node -e \"const p=require\\('./package-lock.json'\\); console.log\\(p.packages['node_modules/@react-navigation/elements'].version\\);\")",
       "Bash(node -e \"const p=require\\('./package-lock.json'\\); console.log\\(p.packages['node_modules/@react-navigation/native'].version\\);\")",
       "Bash(node -e \"const p=require\\('./package-lock.json'\\); console.log\\('react-native', p.packages['node_modules/react-native'].version\\);\")",
-      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.dependencies, null, 2\\)\\);\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.dependencies, null, 2\\)\\);\")",
+      "Read(//c/Users/edmlee/AppData/Local/Temp/quizapp-skill-test/**)",
+      "Bash(./mvnw -q test)",
+      "Bash(echo \"TEST_EXIT=$?\")",
+      "Bash(./mvnw -q -o org.codehaus.mojo:versions-maven-plugin:2.16.2:display-dependency-updates)",
+      "Bash(./mvnw -q org.codehaus.mojo:versions-maven-plugin:2.16.2:display-dependency-updates)",
+      "Bash(./mvnw org.codehaus.mojo:versions-maven-plugin:2.16.2:display-dependency-updates)",
+      "Read(//c/Users/edmlee/.m2/**)",
+      "Read(//c/Users/edmlee/.m2/repository/org/springframework/boot/spring-boot-starter-parent/**)",
+      "Bash(curl *)",
+      "Bash(./mvnw -q clean compile -DskipTests)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(./mvnw -q versions:set-property -Dproperty=h2.version -DnewVersion=2.4.240)",
+      "Bash(./mvnw -q clean compile)",
+      "Bash(echo \"COMPILE_EXIT=$?\")",
+      "Bash(./mvnw dependency:tree)"
     ]
   }
 }
