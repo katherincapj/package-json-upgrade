@@ -29,12 +29,13 @@ when extending the system.
   upgrade agents, and owns the **retry-vs-skip decision** via `retry.retryOn` / `retry.skipOn`.
   Never touches files, package managers, or git.
 - **`planning-agent`** (tools: Read, Bash, Glob, Grep, WebSearch) — read-only, one per repo.
-  Detects the package manager by lockfile priority (`bun.lock(b)` > `pnpm-lock.yaml` > `yarn.lock`
-  > `package-lock.json`; on ties, newest mtime wins and the ambiguity is noted), runs the outdated
-  check, classifies packages against the policy in a fixed order, validates every version and its
-  fallbacks against the npm registry **in one parallel batch**, and returns a plan object
-  (`upgrades` / `groups` / `excluded` / `userExcluded` / `userPinned`). Always returns a plan, even
-  an empty one. Never installs or modifies.
+  Detects the language and package manager from the manifests and lockfiles present — Node
+  (`package-lock.json` > `pnpm-lock.yaml` > `yarn.lock` > `bun.lock(b)`), Java (Maven, Gradle), or
+  Python (Poetry, pipenv, pip); on ties, newest mtime wins and the ambiguity is noted. Classifies
+  the repo as `frontend` or `backend`, runs the outdated check, classifies packages against the
+  policy in a fixed order, validates every version and its fallbacks against the registry **in one
+  parallel batch**, and returns a plan object (`upgrades` / `groups` / `excluded` / `userExcluded`
+  / `userPinned`). Always returns a plan, even an empty one. Never installs or modifies.
 - **`upgrade-agent`** (tools: Read, Bash, Edit, Glob, Grep) — executes one approved plan. Requires
   a clean `git status` to start. Per package or group: install → `git add package.json <lockfile>`
   → validate in `validation.order` (skipping scripts absent from `plan.scripts`) → commit. One

@@ -46,7 +46,8 @@ usually `main`. Check out an upgrade branch by hand before running, until this i
 - The repos you want to upgrade, cloned locally, each with a clean `git status`. The upgrade
   agent refuses to start on a dirty working tree.
 - Each target repo already installed (`node_modules` present) so validation scripts can run.
-- Network access to the npm registry. Every version is confirmed against it before install.
+- Network access to the package registry (npm, Maven Central, PyPI). Every version is confirmed
+  against it before install.
 
 ---
 
@@ -56,16 +57,17 @@ usually `main`. Check out an upgrade branch by hand before running, until this i
 
 ```
 cd package-json-upgrade
-claude
+claude --add-dir ../service-a --add-dir ../web-client
 ```
 
 This matters. Claude Code registers subagents from the `.claude/agents/` directory of the session's
 working directory. Start anywhere else and the three agents do not exist. There is no user-level
-or plugin copy.
+or plugin copy. Each target repo needs `--add-dir` (or `/add-dir` in session) or the agents cannot
+read its manifest at all.
 
 ### 2. Check out an upgrade branch in each target repo
 
-Until gap 3 above is fixed, do this yourself:
+Until gap 2 above is fixed, do this yourself:
 
 ```
 cd ../your-repo
@@ -100,9 +102,10 @@ when only some are.
 The work moves through four stages.
 
 **Stage 1 — Plan.** One read-only planning agent per repo, all launched at once. Each detects the
-package manager from the lockfile (`bun.lock` > `pnpm-lock.yaml` > `yarn.lock` >
-`package-lock.json`; on a tie the newest file wins), runs the outdated check, and sorts every
-outdated package against the policy in a fixed order:
+language and package manager from the manifests and lockfiles present — Node (`package-lock.json`
+> `pnpm-lock.yaml` > `yarn.lock` > `bun.lock`), Java (Maven, Gradle) or Python (Poetry, pipenv,
+pip); on a tie the newest file wins. It classifies the repo as `frontend` or `backend`, runs the
+outdated check, and sorts every outdated package against the policy in a fixed order:
 
 1. In `alwaysExclude` → excluded
 2. In `exclude` → excluded
@@ -111,8 +114,9 @@ outdated package against the policy in a fixed order:
 5. In a `coupled` group → upgraded as one unit or not at all
 6. Everything left → a standalone upgrade
 
-It then confirms each target version and three fallback versions against the npm registry. Anything
-it cannot confirm is dropped, not guessed. Planning agents read only; they never install.
+It then confirms each target version, plus `retry.maxFallbacks` fallback versions, against the
+appropriate registry — npm, Maven Central or PyPI. Anything it cannot confirm is dropped, not
+guessed. Planning agents read only; they never install.
 
 **Stage 2 — Checkpoint 1.** Review of the combined plan. **Currently skipped** —
 `requireApproval` is `false`, so the run approves itself and continues. Set it to `true` to get a
