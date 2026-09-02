@@ -83,6 +83,15 @@ retry:
         - registry-auth
         - registry-network # after backoff retries exhausted
 
+    # NOTE: `pre-existing` is deliberately in neither list. That failure predates
+    # the run, so no version change can address it and it belongs to no package.
+    # The orchestrator handles it as its own outcome at Checkpoint 2. Do not
+    # "fix" this by adding it to retryOn or skipOn.
+    #
+    # Any other label from the upgrade-agent taxonomy that appears in neither
+    # list is reported as unrouted — policy has no rule for it, and the
+    # orchestrator will not improvise one.
+
 # ── VALIDATION ORDER ───────────────────────────────────────
 validation:
     order:
